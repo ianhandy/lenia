@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Lenia — Continuous Cellular Automata</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #1A0D00;
+            color: #DDC165;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+        }
+
+        #canvas-wrap {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+        }
+
+        canvas {
+            display: block;
+            border: 1px solid rgba(221, 193, 101, 0.15);
+            border-radius: 4px;
+            cursor: crosshair;
+        }
+
+        #panel {
+            width: 260px;
+            min-width: 260px;
+            background: rgba(36, 18, 0, 0.95);
+            border-left: 1px solid rgba(221, 193, 101, 0.15);
+            padding: 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        #panel h1 {
+            font-size: 20px;
+            color: #FFE9A3;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            margin-bottom: 0;
+        }
+
+        #panel .subtitle {
+            font-size: 10px;
+            color: #E5591C;
+            letter-spacing: 1px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .control-group label {
+            font-size: 10px;
+            color: rgba(221, 193, 101, 0.7);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .control-group label span {
+            color: #FFE9A3;
+            font-weight: bold;
+        }
+
+        select, input[type="range"] {
+            width: 100%;
+            background: #241200;
+            color: #DDC165;
+            border: 1px solid rgba(221, 193, 101, 0.2);
+            border-radius: 3px;
+            font-family: inherit;
+            font-size: 12px;
+            outline: none;
+        }
+
+        select {
+            padding: 6px 8px;
+            cursor: pointer;
+        }
+
+        select option {
+            background: #241200;
+            color: #DDC165;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 6px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #E5591C;
+            border: 2px solid #FFE9A3;
+            cursor: pointer;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        button {
+            padding: 8px 12px;
+            background: rgba(229, 89, 28, 0.2);
+            color: #DDC165;
+            border: 1px solid rgba(229, 89, 28, 0.4);
+            border-radius: 3px;
+            font-family: inherit;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.15s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        button:hover {
+            background: rgba(229, 89, 28, 0.4);
+            color: #FFE9A3;
+            border-color: #E5591C;
+        }
+
+        button.active {
+            background: rgba(229, 89, 28, 0.6);
+            color: #FFE9A3;
+        }
+
+        #fps {
+            position: fixed;
+            top: 8px;
+            left: 8px;
+            font-size: 11px;
+            color: rgba(221, 193, 101, 0.5);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .info {
+            font-size: 10px;
+            color: rgba(221, 193, 101, 0.4);
+            line-height: 1.5;
+            margin-top: auto;
+            padding-top: 12px;
+            border-top: 1px solid rgba(221, 193, 101, 0.1);
+        }
+
+        .sep {
+            height: 1px;
+            background: rgba(221, 193, 101, 0.1);
+        }
+
+        @media (max-width: 700px) {
+            body { flex-direction: column-reverse; }
+            #panel {
+                width: 100%;
+                min-width: unset;
+                max-height: 40vh;
+                border-left: none;
+                border-top: 1px solid rgba(221, 193, 101, 0.15);
+            }
+            #canvas-wrap { padding: 4px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-wrap">
+        <canvas id="canvas"></canvas>
+    </div>
+
+    <div id="panel">
+        <div>
+            <h1>Lenia</h1>
+            <div class="subtitle">Continuous Cellular Automata</div>
+        </div>
+
+        <div class="control-group">
+            <label>Preset</label>
+            <select id="preset"></select>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="control-group">
+            <label>Kernel Radius (R) <span id="v-radius">13</span></label>
+            <input type="range" id="radius" min="5" max="25" step="1" value="13">
+        </div>
+
+        <div class="control-group">
+            <label>Growth Center (&mu;) <span id="v-mu">0.150</span></label>
+            <input type="range" id="mu" min="0.01" max="0.50" step="0.001" value="0.15">
+        </div>
+
+        <div class="control-group">
+            <label>Growth Width (&sigma;) <span id="v-sigma">0.015</span></label>
+            <input type="range" id="sigma" min="0.002" max="0.100" step="0.001" value="0.015">
+        </div>
+
+        <div class="control-group">
+            <label>Time Step (dt) <span id="v-dt">0.100</span></label>
+            <input type="range" id="dt" min="0.01" max="0.50" step="0.01" value="0.10">
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="control-group">
+            <label>Speed <span id="v-speed">1</span></label>
+            <input type="range" id="speed" min="1" max="10" step="1" value="1">
+        </div>
+
+        <div class="buttons">
+            <button id="btn-pause">Pause</button>
+            <button id="btn-reset">Reset</button>
+            <button id="btn-random">Random</button>
+            <button id="btn-export">PNG</button>
+        </div>
+
+        <div class="info">
+            Click to seed organism<br>
+            Drag to paint life<br>
+            Scroll to adjust brush size
+        </div>
+    </div>
+
+    <div id="fps">-- fps</div>
+
+    <script src="lenia.js"></script>
+</body>
+</html>
